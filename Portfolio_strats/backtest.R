@@ -96,7 +96,7 @@ pspec.box.full <- function(assets_names, min_box=0,max_box=1){
 
 mvp.spec <- function(p){
   p_MVP <- p %>% 
-    add.objective(type = "return",name = "mean") %>% 
+    #add.objective(type = "return",name = "mean") %>% 
     add.objective(type = 'risk',name = 'StdDev', risk_aversion=9999)
   return(p_MVP)
 }
@@ -213,7 +213,7 @@ maxSR_Effic_2021 <-  build.portfolio.strats("maxSR_Effic_2021" ,
                                             "2019/2020",
                                             "2021",
                                             pspec.lo.full,
-                                            mvp.spec,
+                                            tp.sepc,
                                             maxSharp = TRUE,
                                             neg_to_zero = TRUE)
 
@@ -224,7 +224,7 @@ maxRet_Effic_2021 <-  build.portfolio.strats("maxRet_Effic_2021" ,
                                              "2019/2020",
                                              "2021",
                                              pspec.lo.full,
-                                             mvp.spec,
+                                             maxRet.spec,
                                              neg_to_zero = TRUE)
 
 
@@ -267,7 +267,7 @@ maxSR_Ineffic_2021 <-  build.portfolio.strats("maxSR_Ineffic_2021" ,
                                             "2019/2020",
                                             "2021",
                                             pspec.lo.full,
-                                            mvp.spec,
+                                            tp.sepc,
                                             maxSharp = TRUE,
                                             neg_to_zero = TRUE)
 
@@ -278,7 +278,7 @@ maxRet_Ineffic_2021 <-  build.portfolio.strats("maxRet_Ineffic_2021" ,
                                              "2019/2020",
                                              "2021",
                                              pspec.lo.full,
-                                             mvp.spec,
+                                             maxRet.spec,
                                              neg_to_zero = TRUE)
 
 
@@ -320,7 +320,7 @@ maxSR_Effic_2022 <-  build.portfolio.strats("maxSR_Effic_2022" ,
                                             "2020/2021",
                                             "2022",
                                             pspec.lo.full,
-                                            mvp.spec,
+                                            tp.sepc,
                                             maxSharp = TRUE,
                                             neg_to_zero = TRUE)
 
@@ -331,7 +331,7 @@ maxRet_Effic_2022 <-  build.portfolio.strats("maxRet_Effic_2022" ,
                                              "2020/2021",
                                              "2022",
                                              pspec.lo.full,
-                                             mvp.spec,
+                                             maxRet.spec,
                                              neg_to_zero = TRUE)
 
 
@@ -371,7 +371,7 @@ maxSR_Ineffic_2022 <-  build.portfolio.strats("maxSR_Ineffic_2022" ,
                                               "2020/2021",
                                               "2022",
                                               pspec.lo.full,
-                                              mvp.spec,
+                                              tp.sepc,
                                               maxSharp = TRUE,
                                               neg_to_zero = TRUE)
 
@@ -382,7 +382,7 @@ maxRet_Ineffic_2022 <-  build.portfolio.strats("maxRet_Ineffic_2022" ,
                                                "2020/2021",
                                                "2022",
                                                pspec.lo.full,
-                                               mvp.spec,
+                                               maxRet.spec,
                                                neg_to_zero = TRUE)
 
 
@@ -413,12 +413,7 @@ EW_Ineffic_2022 <-  build.EW.portfolio("EW_Ineffic_2022" ,
 
 # Outras KPIs
 
-#PainIndex
-#PainRatio
-#OmegaSharpeRatio
-#OmegaExcessReturn
-#RachevRatio
-#Probabilistic Sharpe Ratio
+
 
 table.Distributions(MVP_Effic_2021$R)
 
@@ -514,7 +509,7 @@ all_strategies_2021 = list(MVP_Effic_2021,
                       EW_Effic_2021,
                       EW_Ineffic_2021)
 
-get.KPIs <- function(strategies_list,riskfree, year_file,folder_name='KPI',mar= 0,prob=0.95){
+get.KPIs <- function(strategies_list,riskfree, year_file,folder_name='KPIs',mar= 0,prob=0.95){
   df_returns_all <- data.frame()
   df_dist_all <- data.frame()
   df_DR_all <- data.frame()
@@ -567,6 +562,10 @@ get.KPIs <- function(strategies_list,riskfree, year_file,folder_name='KPI',mar= 
   df_returns_all <-t(df_returns_all) 
   df_returns_all %>% write.csv(file  = paste(folder_name,'/Returns',year_file,".csv",sep=''),row.names = TRUE)
   
+  df_returns_all %>% write.csv(file  = paste(folder_name,'/Returns',year_file,".csv",sep=''),row.names = TRUE)
+  
+  
+    
   df_dist_all <- t(df_dist_all) 
   df_dist_all %>% write.csv(file  = paste(folder_name,'/Distributions',year_file,".csv",sep=''),row.names = TRUE)
   
@@ -606,7 +605,7 @@ all_strategies_2022 = list(MVP_Effic_2022,
                            EW_Ineffic_2022)
 
 
-results2022 <- get.KPIs(all_strategies_2022,riskfree = rfUS_2022)
+results2022 <- get.KPIs(all_strategies_2022,riskfree = rfUS_2022,year_file = '2022')
 
 
 
