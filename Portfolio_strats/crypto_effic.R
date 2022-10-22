@@ -18,9 +18,10 @@ library(readxl)
 calcEfficiency <- function(x, N= dim(x)[1],scale=10:(N/4),q=-4:4,m=1){
   b <- MFDFA(x, scale, m, q)
   
-  effic <-  max(b[["Hq"]]) - min(b[["Hq"]])
+  #effic <-  max(b[["Hq"]]) - min(b[["Hq"]])
+  mdm <- (abs(b[["Hq"]][1] - 0.5) + abs(b[["Hq"]][9]-0.9))/2
   
-  return(effic)
+  return(mdm)
   
 }
 

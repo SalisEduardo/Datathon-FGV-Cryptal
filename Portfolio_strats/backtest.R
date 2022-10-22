@@ -387,7 +387,7 @@ maxRet_Ineffic_2022 <-  build.portfolio.strats("maxRet_Ineffic_2022" ,
 
 
 minCVaR_Ineffic_2022 <- build.portfolio.strats("minCVaR_Ineffic_2022" ,
-                                             tags_efficients_2022,
+                                             tags_inefficients_2022,
                                              crypto_returns,
                                              "2020/2021",
                                              "2022",
