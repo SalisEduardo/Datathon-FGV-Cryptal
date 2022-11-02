@@ -15,6 +15,10 @@ library(MFDFA)
 library(readxl)
 library(plotly)
 library(nonlinearTseries)
+library(bizdays)
+library(plyr)
+library(ggdark)
+
 
 
 
@@ -38,7 +42,7 @@ RiskFree_US = na.omit(Return.calculate(RiskFree_US['2019-01/2022-09-29']))
 index(RiskFree_US) <- as.POSIXct(index(RiskFree_US)) 
 
 
-rfUS_2021<- RiskFree_US['2021'] 
+rfUS_2021 <- RiskFree_US['2021'] 
 
 ann_rfUS_2021 <- Return.annualized(rfUS_2021,scale = 252)[1] 
 
@@ -285,8 +289,8 @@ maxRet_Ineffic_2021 <-  build.portfolio.strats("maxRet_Ineffic_2021" ,
 minCVaR_Ineffic_2021 <- build.portfolio.strats("minCVaR_Ineffic_2021" ,
                                              tags_inefficients_2021,
                                              crypto_returns,
-                                             "2020/2021",
-                                             "2022",
+                                             "2019/2020",
+                                             "2021",
                                              pspec.lo.full,
                                              minCVaR.spec,
                                              neg_to_zero = TRUE)
@@ -410,25 +414,8 @@ EW_Ineffic_2022 <-  build.EW.portfolio("EW_Ineffic_2022" ,
 
 
 
-
 # Outras KPIs
 
-
-
-table.Distributions(MVP_Effic_2021$R)
-
-table.DownsideRisk(MVP_Effic_2021$R, MAR = 0, p=0.95) # riskfree diverge do tamanho
-
-table.DownsideRiskRatio(MVP_Effic_2021$R, MAR = 0)
-
-table.Drawdowns(MVP_Effic_2021$R)
-
-table.DrawdownsRatio(MVP_Effic_2021$R)
-
-table.InformationRatio
-
-#table.CaptureRatios e table.InformationRatio - benchmarks diferem do tamanho da série
-  # Necessario achar um bench para crypto
 
 
 table.modigliani <- function(R,period,riskfree,start_date = "2019-01-01",end_date = "2022-09-29"){
@@ -509,7 +496,7 @@ all_strategies_2021 = list(MVP_Effic_2021,
                       EW_Effic_2021,
                       EW_Ineffic_2021)
 
-get.KPIs <- function(strategies_list,riskfree, year_file,folder_name='KPIs',mar= 0,prob=0.95){
+get.KPIs <- function(strategies_list,RF, year_file,folder_name='KPIs',mar= 0,prob=0.95){
   df_returns_all <- data.frame()
   df_dist_all <- data.frame()
   df_DR_all <- data.frame()
@@ -521,7 +508,7 @@ get.KPIs <- function(strategies_list,riskfree, year_file,folder_name='KPIs',mar=
   for (s in strategies_list){
     print(s$name)
     
-    df_returns <- table.AnnualizedReturns(s$R,Rf = rfUS_2021)
+    df_returns <- table.AnnualizedReturns(s$R,Rf = RF)
     colnames(df_returns) <- s$name
     df_returns <- t(df_returns)
     df_returns_all <- rbind(df_returns_all,df_returns)
@@ -552,7 +539,7 @@ get.KPIs <- function(strategies_list,riskfree, year_file,folder_name='KPIs',mar=
     df_DD_ratio <- t(df_DD_ratio)
     df_DD_ratio_all <- rbind(df_DD_ratio_all,df_DD_ratio)
     
-    df_modig <- table.modigliani(s$R,period = s$test,riskfree = rfUS_2021)
+    df_modig <- table.modigliani(s$R,period = s$test,riskfree = RF)
     colnames(df_modig) <- s$name
     df_modig <- t(df_modig)
     modig_all <- rbind(modig_all,df_modig)  
@@ -588,8 +575,8 @@ get.KPIs <- function(strategies_list,riskfree, year_file,folder_name='KPIs',mar=
   
 }
 
-results2021 <- get.KPIs(all_strategies_2021,riskfree = rfUS_2021,year_file = '2021')
-results2021[[1]]
+results2021 <- get.KPIs(all_strategies_2021,RF = rfUS_2021,year_file = '2021')
+#results2021[[1]]
 
 ## 2022
 
@@ -605,17 +592,20 @@ all_strategies_2022 = list(MVP_Effic_2022,
                            EW_Ineffic_2022)
 
 
-results2022 <- get.KPIs(all_strategies_2022,riskfree = rfUS_2022,year_file = '2022')
-
+results2022 <- get.KPIs(all_strategies_2022,RF = rfUS_2022,year_file = '2022')
+results2022[[1]]
 
 
 #Export Results
 
 
-#df_results2021 %>% as.data.frame() %>%   write.csv(file  = "Results2021.csv",row.names = TRUE)
+for(i in all_strategies_2021){
+  i$R %>%  write.csv(paste("Returns/",i$name,".csv",sep=''))
+}
 
-#df_results2022 %>% as.data.frame() %>%   write.csv(file  = "Results2022.csv",row.names = TRUE)
-
+for(i in all_strategies_2022){
+  i$R %>%  write.csv(paste("Returns/",i$name,".csv",sep=''))
+}
 
 #Exporting charts of Performance
 for(s in all_strategies_2021){
@@ -688,7 +678,7 @@ tformat(lag_Quarter_effic90d) <- "%Y-%m"
 
 
 rankrows <- function(x){
-  ranks <- t(apply(x, 1, order))
+  ranks <- t(apply(x, 1, order,decreasing=FALSE)) # The more inefficient the asset , more the MDM will be . So the order need to be decreasing
   colnames(ranks) <- colnames(x)
   return(ranks)
 }
@@ -711,15 +701,12 @@ get_effic_names <-function(x,nlargest=4){
 }
   
 
-get_effic_names(rankrows(Quarter_effic120d))[1] %>%  unlist()
+#get_effic_names(rankrows(Quarter_effic120d))[1] %>%  unlist()
 
   
-#as.difftime
-#seq.date
-  
 
-library(bizdays)
-
+## Apply all strategies by changing the portfolio constituents when the efficiency changes
+## Train in the same period that the ranks were obtained
 build_effifc_strategy() <- function(x,lag_effic, window_effic,split_period='months'){
   
   iteration_start <- format(index(lag_roll_effic)[1],"%Y-%m") # first date of series of testing periods 
@@ -727,29 +714,377 @@ build_effifc_strategy() <- function(x,lag_effic, window_effic,split_period='mont
   
   x.tests <- split(x[iteration_start_str,], f= split_period)
   
- 
+ # discontinued ....
 }
   
 
-dt <- index(lag_Month_effic60d)[1] 
-
-dt<- format(dt,"%Y-%m")
-
-cryp_teste <- crypto_returns[dt,]
-
-dt2 <- index(cryp_teste)[1]
+#-------------------------------------------------------------------------------------------------------------------
+# Heuristic Strategies - similar to inverse volatility
 
 
-dtx <- offset(dt2,-60) %>%  as.character()
-
-dty <- offset(dt2,-1) %>%  as.character()
-
-paste(dtx,dty,sep = '/')
-
-
-
-for(dt in 1:length(index(lag_Month_effic90d))){
-  print(index(lag_Month_effic90d)[dt] %>%  as.character())
+inverse.inefficiency.weights <- function(x){
+  inverse <- (1/x)
+  sum_inverse <- rowSums(inverse)
+  weights <- inverse/sum_inverse
+  
+  return(weights)
+  
 }
+
+
+calcEfficiency <- function(x, N= dim(x)[1],scale=10:(N/4),q=-4:4,m=1){
+  b <- MFDFA(x, scale, m, q)
+  
+  #effic <-  max(b[["Hq"]]) - min(b[["Hq"]])
+  mdm <- (abs(b[["Hq"]][1] - 0.5) + abs(b[["Hq"]][9]-0.5))/2
+  
+  return(mdm)
+  
+}
+
+#calcEfficiency(crypto_returns['2020/2021']$BNB)
+
+#lapply(crypto_returns['2019/2020'],calcEfficiency)
+
+
+
+
+##
+
+mdm1 <- data.frame(BNB = 0.1239,
+          TRX = 0.1560,
+          ETH = 0.1230,
+          BTC = 0.1893,
+          LTC = 0.1485,
+          ADA = 0.0778,
+          XRP = 0.2530,
+          DOGE = 0.2669)
+
+
+weights_inverse_ineffic2021 <- inverse.inefficiency.weights(mdm1)
+
+
+mdm2 <- data.frame(BNB = 0.0883,
+                   TRX = 0.13105,
+                   ETH = 0.1423,
+                   BTC = 0.1535,
+                   LTC = 0.1786,
+                   ADA = 0.1857,
+                   XRP = 0.2488,
+                   DOGE = 0.2601)
+
+weights_inverse_ineffic2022 <- inverse.inefficiency.weights(mdm2)
+
+
+build.inverse.inefficency.strategy <- function(strats_name,initial_weights,return_series,train_period,test_period){
+  
+  R <- return_series[test_period,colnames(initial_weights)] #Ordering the columns and selecting the test period
+  weights_vec <- as.numeric(initial_weights)
+  
+  InvInef_returns <- Return.portfolio(R,weights = weights_vec)
+  
+  return(list(
+    name = strats_name,
+    train = train_period,
+    test = test_period,
+    w  =  initial_weights,
+    R = InvInef_returns
+  ))
+  
+}
+
+InvInef2021 <- build.inverse.inefficency.strategy("InvInef2021",weights_inverse_ineffic2021,crypto_returns,"2019/2020","2021")
+InvInef2022 <- build.inverse.inefficency.strategy("InvInef2022",weights_inverse_ineffic2022,crypto_returns,"2021/2022","2022")
+
+
+
+
+strategies_InvInef <- list(InvInef2021,InvInef2022)
+
+for(i in strategies_InvInef){
+  i$R %>%  write.csv(paste("Returns/",i$name,".csv",sep=''))
+}
+
+
+KPIs_InvInef2021 <- get.KPIs(list(InvInef2021),RF = rfUS_2021,year_file = '2021',folder_name='Heuristic KPIs')
+
+KPIs_InvInef2022 <- get.KPIs(list(InvInef2022),RF = rfUS_2022,year_file = '2022',folder_name='Heuristic KPIs')
+
+
+for(s in strategies_InvInef){
+  file_name <-paste("Imagens/",s$name,'.png',sep = '')
+  png(file_name)
+  charts.PerformanceSummary(s$R,main = s$name)
+  dev.off()
+  
+}
+
+
+InvInef2021$w %>% write.csv("Pesos/InvInef2021.csv")
+
+InvInef2022$w %>% write.csv("Pesos/InvInef2022.csv")
+
+
+all_effic2022 = list(MVP_Effic_2022,
+                     maxRet_Effic_2022,
+                     maxSR_Effic_2022,
+                     minCVaR_Effic_2022)
+
+all_effic2021 = list(MVP_Effic_2021,
+                     maxRet_Effic_2021,
+                     maxSR_Effic_2021,
+                     minCVaR_Effic_2021)
+
+all_ineffic2021 = list(MVP_Ineffic_2021,
+                     maxRet_Ineffic_2021,
+                     maxSR_Ineffic_2021,
+                     minCVaR_Ineffic_2021)
+
+all_ineffic2022 = list(MVP_Ineffic_2022,
+                       maxRet_Ineffic_2022,
+                       maxSR_Ineffic_2022,
+                       minCVaR_Ineffic_2022)
+
+
+
+effic2021weights <- NULL
+for(s in all_effic2021){
+  w_df <- as.data.frame(s$w)
+  colnames(w_df) <- c(s$name)
+  w_df[,1] <- round(w_df[,1],4)
+  w_df <- w_df %>% t()
+  effic2021weights <- rbind(effic2021weights,w_df)
+ 
+}
+
+effic2021weights %>%  write.csv("Pesos/effic2021weights.csv")
+
+effic2022weights <- NULL
+for(s in all_effic2022){
+  w_df <- as.data.frame(s$w)
+  colnames(w_df) <- c(s$name)
+  w_df[,1] <- round(w_df[,1],4)
+  w_df <- w_df %>% t()
+  effic2022weights <- rbind(effic2022weights,w_df)
+  
+}
+
+effic2022weights %>%  write.csv("Pesos/effic2022weights.csv")
+
+
+ineffic2022weights <- NULL
+for(s in all_ineffic2022){
+  w_df <- as.data.frame(s$w)
+  colnames(w_df) <- c(s$name)
+  w_df[,1] <- round(w_df[,1],4)
+  w_df <- w_df %>% t()
+  ineffic2022weights <- rbind(ineffic2022weights,w_df)
+  
+}
+
+ineffic2022weights %>%  write.csv("Pesos/ineffic2022weights.csv")
+
+
+ineffic2021weights <- NULL
+for(s in all_ineffic2021){
+  w_df <- as.data.frame(s$w)
+  colnames(w_df) <- c(s$name)
+  w_df[,1] <- round(w_df[,1],4)
+  w_df <- w_df %>% t()
+  ineffic2021weights <- rbind(ineffic2021weights,w_df)
+  
+}
+ineffic2021weights %>%  write.csv("Pesos/ineffic2021weights.csv")
+
+
+#################################################################################################
+
+#Teste Retornos.
+
+ibov <- quantmod::getSymbols("^BVSP", auto.assign = FALSE, from = as.Date("2021-01-01"), to = as.Date("2021-12-31"))%>%
+  Ad() %>%
+  Return.calculate() %>%
+  na.omit()
+
+colnames(ibov) <- c("Returns")
+
+ibov$Returns
+
+
+result1 = prod(1 + ibov$Returns)^(252/length(ibov$Return)) - 1
+print(result1)
+ra1 = Return.annualized(ibov$Returns)
+print(ra1)
+
+result2 = prod(1 + MVP_Effic_2021$R)^(252/length(MVP_Effic_2021$R)) - 1
+print(result1)
+ra2 = Return.annualized(MVP_Effic_2021$R)
+print(ra2)
+
+
+result3 = prod(1 + MVP_Effic_2022$R)^(252/length(MVP_Effic_2022$R)) - 1
+print(result3)
+ra3 = Return.annualized(MVP_Effic_2022$R)
+print(ra3)
+
+
+Return.annualized(crypto_returns['2021'])
+
+
+#################################################################################################
+
+
+
+series_effics2021 <- merge(MVP_Effic_2021$R,
+                           maxRet_Effic_2021$R,
+                           maxSR_Effic_2021$R,
+                           minCVaR_Effic_2021$R,
+                           EW_Effic_2021$R, all = TRUE)
+
+colnames(series_effics2021) <- c(MVP_Effic_2021$name,
+                                 maxRet_Effic_2021$name,
+                                 maxSR_Effic_2021$name,
+                                 minCVaR_Effic_2021$name,
+                                 EW_Effic_2021$name)
+
+series_effics2021 <- series_effics2021 %>% fortify.zoo %>% as.tibble()
+
+# series_effics2021$Type <- "Efficient"
+
+series_ineffic2021 <- merge(MVP_Ineffic_2021$R,
+                           maxRet_Ineffic_2021$R,
+                           maxSR_Ineffic_2021$R,
+                           minCVaR_Ineffic_2021$R,
+                           EW_Ineffic_2021$R, all = TRUE)
+
+colnames(series_ineffic2021) <- c(MVP_Ineffic_2021$name,
+                                 maxRet_Ineffic_2021$name,
+                                 maxSR_Ineffic_2021$name,
+                                 minCVaR_Ineffic_2021$name,
+                                 EW_Ineffic_2021$name)
+
+series_ineffic2021 <- series_ineffic2021 %>% fortify.zoo %>% as.tibble()
+# series_ineffic2021$Type <- "Inefficient"
+
+
+
+series_invinef2021 <- InvInef2021$R
+colnames(series_invinef2021) <- c(InvInef2021$name)
+series_invinef2021 <- series_invinef2021 %>% fortify.zoo %>% as.tibble()
+
+# series_invinef2021$Type <- "Inverse Inefficiency"
+
+
+series_returns2021 <- join_all(list(series_effics2021,series_ineffic2021,series_invinef2021), by='Index', type='left') 
+
+
+series_returns2021 <- series_returns2021 %>%  dplyr::rename("Data" = Index )
+
+series_returns2021[,-1] <- ((series_returns2021[,-1] + 1) %>%  cumprod()) -1
+
+
+series_returns2021 %>%
+  gather(key = "Strat", value = "return", -Data) %>% 
+  ggplot(aes(x=Data,y=return)) +
+  geom_line(aes(color = Strat), size = 1) +
+  labs(x="Data",y='Retorno Acumulado',title = 'Desempenho das carteiras em 2021')+
+  ggdark::dark_theme_gray() 
+  
+
+### MVP pairs
+
+series_returns2021 %>%
+  gather(key = "Strat", value = "return", -Data) %>% 
+  filter(Strat == MVP_Effic_2021$name | Strat == MVP_Ineffic_2021$name ) %>% 
+  ggplot(aes(x=Data,y=return)) +
+  geom_line(aes(color = Strat), size = 1) +
+  labs(x="Data",y='Retorno Acumulado',title = 'Desempenho das carteiras em 2021')+
+  ggdark::dark_theme_gray() 
+
+series_returns2021 %>%
+  gather(key = "Strat", value = "return", -Data) %>% 
+  filter(Strat == maxRet_Effic_2021$name | Strat == maxRet_Ineffic_2021$name ) %>% 
+  ggplot(aes(x=Data,y=return)) +
+  geom_line(aes(color = Strat), size = 1) +
+  labs(x="Data",y='Retorno Acumulado',title = 'Desempenho das carteiras em 2021')+
+  ggdark::dark_theme_gray() 
+
+
+series_returns2021 %>%
+  gather(key = "Strat", value = "return", -Data) %>% 
+  filter(Strat == minCVaR_Effic_2021$name | Strat == minCVaR_Ineffic_2021$name ) %>% 
+  ggplot(aes(x=Data,y=return)) +
+  geom_line(aes(color = Strat), size = 1) +
+  labs(x="Data",y='Retorno Acumulado',title = 'Desempenho das carteiras em 2021')+
+  ggdark::dark_theme_gray() 
+
+
+
+#2022
+series_effics2022 <- merge(MVP_Effic_2022$R,
+                           maxRet_Effic_2022$R,
+                           maxSR_Effic_2022$R,
+                           minCVaR_Effic_2022$R,
+                           EW_Effic_2022$R, all = TRUE)
+
+colnames(series_effics2022) <- c(MVP_Effic_2022$name,
+                                 maxRet_Effic_2022$name,
+                                 maxSR_Effic_2022$name,
+                                 minCVaR_Effic_2022$name,
+                                 EW_Effic_2022$name)
+
+series_effics2022 <- series_effics2022 %>% fortify.zoo %>% as.tibble()
+# series_effics2022$Type <- "Efficient"
+
+
+
+series_ineffic2022 <- merge(MVP_Ineffic_2022$R,
+                            maxRet_Ineffic_2022$R,
+                            maxSR_Ineffic_2022$R,
+                            minCVaR_Ineffic_2022$R,
+                            EW_Ineffic_2022$R, all = TRUE)
+
+
+
+colnames(series_ineffic2022) <- c(MVP_Ineffic_2022$name,
+                                  maxRet_Ineffic_2022$name,
+                                  maxSR_Ineffic_2022$name,
+                                  minCVaR_Ineffic_2022$name,
+                                  EW_Ineffic_2022$name)
+
+series_ineffic2022 <- series_ineffic2022 %>% fortify.zoo %>% as.tibble()
+# series_ineffic2022$Type <- "Inefficient"
+
+
+series_invinef2022 <- InvInef2022$R
+colnames(series_invinef2022) <- c(InvInef2022$name)
+series_invinef2022 <- series_invinef2022 %>% fortify.zoo %>% as.tibble()
+
+# series_invinef2022$Type <- "Inverse Inefficiency"
+
+series_returns2022 <- join_all(list(series_effics2022,series_ineffic2022,series_invinef2022), by='Index', type='left') 
+
+
+series_returns2022 <- series_returns2022 %>%  dplyr::rename("Data" = Index )
+
+series_returns2022[,-1] <- ((series_returns2022[,-1] + 1) %>%  cumprod()) -1
+
+
+series_returns2022 %>%
+  gather(key = "Strat", value = "return", -Data) %>% 
+  ggplot(aes(x=Data,y=return)) +
+  geom_line(aes(color = Strat), size = 1) +
+  labs(x="Data",y='Retorno Acumulado',title = 'Desempenho das carteiras em 2022')+
+  ggdark::dark_theme_gray() 
+
+
+
+
+
+
+
+
+
+
 
 

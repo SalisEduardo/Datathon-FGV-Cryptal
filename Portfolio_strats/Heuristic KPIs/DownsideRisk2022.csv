@@ -1,0 +1,12 @@
+"","InvInef2022"
+"Semi Deviation",0.0272
+"Gain Deviation",0.0203
+"Loss Deviation",0.0281
+"Downside Deviation (MAR=0%)",0.0281
+"Downside Deviation (Rf=0%)",0.0281
+"Downside Deviation (0%)",0.0281
+"Maximum Drawdown",0.5956
+"Historical VaR (95%)",-0.0624
+"Historical ES (95%)",-0.0916
+"Modified VaR (95%)",-0.0656
+"Modified ES (95%)",-0.1

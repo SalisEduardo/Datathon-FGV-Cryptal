@@ -1,0 +1,2 @@
+
+$W_i = \frac{\frac{1}{MDM_i}}{\sum_{J=1}^N \frac{1}{MDM_i}}$
