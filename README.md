@@ -4,11 +4,11 @@ Repositório contendo os códigos utilizados para a 3ª edição do Desafio de D
 
 ## Equipe
 
-Heitor Teixeira Couto Campos - Eng. Mecânica EESCUSP (Research at UBRI)
-Eduardo Amorim Vilela de Salis - Administração FEAUSP
-Lukas Gherman da Silva - Administração FEAUSP
-Thais Cordeiro Teixeira - Ciências Econômicas FEAUSP
-Vinícius Roberto Simões Nazato - Administração FEAUSP
+* Heitor Teixeira Couto Campos - Eng. Mecânica EESCUSP (Research at UBRI)
+* Eduardo Amorim Vilela de Salis - Administração FEAUSP
+* Lukas Gherman da Silva - Administração FEAUSP
+* Thais Cordeiro Teixeira - Ciências Econômicas FEAUSP
+* Vinícius Roberto Simões Nazato - Administração FEAUSP
 
 Orientador:  Prof. Dr. Leandro Maciel
 
